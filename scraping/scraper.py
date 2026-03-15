@@ -7,145 +7,148 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import undetected_chromedriver as uc
 import random
+import scraper_utils as su
 
-def scroll_suave(driver):
-    altura_actual = driver.execute_script("return window.scrollY")
-    altura_total = driver.execute_script("return document.body.scrollHeight")
-    
-    while altura_actual < altura_total:
-        # Incremento aleatorio entre 50 y 150px (más humano)
-        incremento = random.randint(60, 250)
-        altura_actual += incremento
-        driver.execute_script(f"window.scrollTo(0, {altura_actual});")
-        
-        # Pausa aleatoria entre 0.05 y 0.3 segundos
-        time.sleep(random.uniform(0.05, 0.3))
-        
-        # De vez en cuando hace una pausa más larga, como si estuvieras leyendo
-        if random.random() < 0.1:  # 10% de probabilidad
-            time.sleep(random.uniform(0.5, 1.5))
-        
-        # Actualizar altura total por si el DOM ha crecido
-        altura_total = driver.execute_script("return document.body.scrollHeight")
+# CONFIGURACIÓN DEL SITIO
 
-options = uc.ChromeOptions()
-options.add_argument("--start-maximized")
+SITE_CONFIGS = {
+    "pccomponentes.com": {
+        "scroll_speed": 1.2,
+        "cookies_btn":    (By.XPATH,      "//button[contains(., 'Aceptar')]"),
+        "bloque":         (By.CSS_SELECTOR, "[class*='commentDataContainer']"),
+        "paginacion": {
+            "tipo":        "boton",   # 👈 "boton" | "numerada"
+            "selector":    (By.XPATH, "//button[contains(., 'Cargar más opiniones')]"),
+            "max_paginas": None,
+        },
+        "campos": {
+            "rating": {
+                "selector": (By.CSS_SELECTOR, "[data-testid='rating-bar-percent']"),
+                "tipo": "rating_style",
+            },
+            "fecha": {
+                "selector": (By.CSS_SELECTOR, "[class*='captionRegular']"),
+                "tipo": "text",
+            },
+            "comentario": {
+                "selector": (By.CSS_SELECTOR, "[class*='body2Regular']"),
+                "tipo": "text",
+            },
+            "pros": {
+                "selector": (By.CSS_SELECTOR, "[data-testid='pros'] li"),
+                "tipo": "lista",
+            },
+            "contras": {
+                "selector": (By.CSS_SELECTOR, "[data-testid='cons'] li"),
+                "tipo": "lista",
+            },
+        }
+    },
+    "mediamarkt.es": {
+        "scroll_speed": 2.2,
+        "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
+        "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
+        "paginacion": {
+            "tipo":        "numerada",  # 👈 paginación por números
+            "selector":    None,
+            "max_paginas": 5,
+        },
+        "campos": {
+            "rating": {
+                "selector": (By.CSS_SELECTOR, "[data-test='mms-customer-rating-count']"),
+                "tipo": "rating_slash",   # viene como "5 / 5", nuevo tipo necesario
+            },
+            "titulo": {
+                "selector": (By.CSS_SELECTOR, "p.ixvBRV"),   # ⚠️ clase generada, puede cambiar
+                "tipo": "text",
+            },
+            "comentario": {
+                "selector": (By.CSS_SELECTOR, "[data-test='mms-review-full'] span"),
+                "tipo": "text",
+            },
+            "pros": {
+                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-pro'] ~ ul li p"),
+                "tipo": "lista",
+            },
+            "contras": {
+                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-cons'] ~ ul li p"),
+                "tipo": "lista",
+            },
+        }
+    },
+    "amazon.es": {
+        "scroll_speed": 2.2,
+        "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
+        "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
+        "paginacion": {
+            "tipo":        "numerada",  # 👈 paginación por números
+            "selector":    None,
+            "max_paginas": 5,
+        },
+        "campos": {
+            "rating": {
+                "selector": (By.CSS_SELECTOR, "[data-test='mms-customer-rating-count']"),
+                "tipo": "rating_slash",   # viene como "5 / 5", nuevo tipo necesario
+            },
+            "titulo": {
+                "selector": (By.CSS_SELECTOR, "p.ixvBRV"),   # ⚠️ clase generada, puede cambiar
+                "tipo": "text",
+            },
+            "comentario": {
+                "selector": (By.CSS_SELECTOR, "[data-test='mms-review-full'] span"),
+                "tipo": "text",
+            },
+            "pros": {
+                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-pro'] ~ ul li p"),
+                "tipo": "lista",
+            },
+            "contras": {
+                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-cons'] ~ ul li p"),
+                "tipo": "lista",
+            },
+        }
+    },
+}
 
-driver = uc.Chrome(options=options, version_main=145)  # 👈 Reemplaza al Chrome normal
+def scrape_opiniones(url):
+    domain = su.get_domain(url)
+    config = SITE_CONFIGS.get(domain)
 
-url = "https://www.pccomponentes.com/opiniones/pccom-ready-v2-amd-ryzen-7-5800x-32gb-1tb-ssd-rtx-5060-ti-16gb"
-url2 = "https://www.pccomponentes.com/opiniones/krom-kertz-rgb-238-led-fullhd-200hz-g-sync-compatible"
-driver.get(url2)
-time.sleep(3) # 5
+    if not config:
+        raise ValueError(f"❌ No hay configuración para: {domain}")
 
-# Cerrar cookies
-try:
-    cookies_btn = driver.find_element(By.XPATH, "//button[contains(., 'Aceptar')]")
-    cookies_btn.click()
-    print("✅ Cookies aceptadas")
-    time.sleep(1)
-except:
-    print("No hay banner de cookies")
+    # — Iniciar driver —
+    options = uc.ChromeOptions()
+    options.add_argument("--start-maximized")
+    driver = uc.Chrome(options=options, version_main=145)
+    driver.get(url)
+    time.sleep(2.2)
 
-# ---- BUCLE CARGAR MÁS ----
-while True:
+    # — Cerrar cookies —
     try:
-        # 👇 Cambiado a commentDataContainer
-        bloques_antes = len(driver.find_elements(By.CSS_SELECTOR, "[class*='commentDataContainer']"))
-        print(f"Opiniones actuales: {bloques_antes}")
-
-        scroll_suave(driver)
+        by, sel = config["cookies_btn"]
+        driver.find_element(by, sel).click()
+        print("✅ Cookies aceptadas")
         time.sleep(1)
-
-        botones = driver.find_elements(By.XPATH, "//button[contains(., 'Cargar más opiniones')]")
-        
-        if not botones:
-            print("✅ No hay más botón, fin")
-            break
-        
-        boton = botones[0]
-        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", boton)
-        time.sleep(2)
-        driver.execute_script("arguments[0].click();", boton)
-        print("⏳ Click hecho, esperando nuevas opiniones...")
-        time.sleep(4)
-
-        scroll_suave(driver)
-        time.sleep(2)
-
-        timeout = 20
-        while timeout > 0:
-            # 👇 Cambiado a commentDataContainer
-            bloques_despues = len(driver.find_elements(By.CSS_SELECTOR, "[class*='commentDataContainer']"))
-            if bloques_despues > bloques_antes:
-                print(f"✅ Cargadas {bloques_despues - bloques_antes} nuevas opiniones")
-                break
-            time.sleep(1)
-            timeout -= 1
-        
-        if timeout == 0:
-            print("⚠️ No cargó nuevas opiniones, saliendo...")
-            break
-
-    except Exception as e:
-        print(f"Error: {e}")
-        break
-
-# ---- EXTRACCIÓN COMPLETA ----
-print("\n📋 Extrayendo opiniones...\n")
-bloques = driver.find_elements(By.CSS_SELECTOR, "[class*='commentDataContainer']")
-print(f"Total de opiniones encontradas: {len(bloques)}\n")
-
-opiniones = []
-
-for i, bloque in enumerate(bloques):
-    opinion = {}
-
-    # Rating
-    try:
-        rating_el = bloque.find_element(By.CSS_SELECTOR, "[data-testid='rating-bar-percent']")
-        style = rating_el.get_attribute("style")  # "width: 90%;"
-        porcentaje = float(style.replace("width:", "").replace("%;", "").strip())
-        opinion["rating"] = round(porcentaje / 100 * 5, 1)
     except:
-        opinion["rating"] = None
+        print("ℹ️ No hay banner de cookies")
 
-    # Fecha
-    try:
-        fecha = bloque.find_element(By.CSS_SELECTOR, "[class*='captionRegular']")
-        opinion["fecha"] = fecha.text
-    except:
-        opinion["fecha"] = None
+    # — Paginación —
+    su.paginar(driver, config)
 
-    # Comentario
-    try:
-        comentario = bloque.find_element(By.CSS_SELECTOR, "[class*='body2Regular']")
-        opinion["comentario"] = comentario.text
-    except:
-        opinion["comentario"] = None
+    # — Extracción —
+    print("\n📋 Extrayendo opiniones...\n")
+    opiniones = su.paginar(driver, config)
+    print(f"Total: {len(opiniones)}")
+    
+    driver.quit()
+    return opiniones
 
-    # Pros
-    try:
-        pros = bloque.find_elements(By.CSS_SELECTOR, "[data-testid='pros'] li")
-        opinion["pros"] = [p.text for p in pros]
-    except:
-        opinion["pros"] = []
+#  EJECUCIÓN
 
-    # Contras
-    try:
-        cons = bloque.find_elements(By.CSS_SELECTOR, "[data-testid='cons'] li")
-        opinion["contras"] = [c.text for c in cons]
-    except:
-        opinion["contras"] = []
-
-    opiniones.append(opinion)
-
-    print(f"--- Opinión {i+1} ---")
-    print(f"⭐ Rating:     {opinion['rating']} / 5")
-    print(f"📅 Fecha:      {opinion['fecha']}")
-    print(f"💬 Comentario: {opinion['comentario']}")
-    print(f"✅ Pros:       {opinion['pros']}")
-    print(f"❌ Contras:    {opinion['contras']}")
-    print()
-
-driver.quit()
+if __name__ == "__main__":
+    urlpcc = "https://www.pccomponentes.com/opiniones/krom-kertz-rgb-238-led-fullhd-200hz-g-sync-compatible"
+    urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
+    urlamz = "https://www.amazon.es/product-reviews/B0FHQFFDJ6/ref=cm_cr_dp_d_show_all_btm?ie=UTF8"
+    resultados = scrape_opiniones(urlamz)
+    print(resultados)
