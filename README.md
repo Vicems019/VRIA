@@ -59,7 +59,8 @@ VRIA/
 
 Por el momento la aplicación solo funciona con:
 
-- ✅ Amazon.com
+- ✅ PCComponentes.es
+- ✅ Mediamarkt.es
 
 > Otras páginas se irán añadiendo progresivamente.
 
