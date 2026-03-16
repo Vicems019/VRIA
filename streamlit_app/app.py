@@ -19,8 +19,7 @@ if st.button("Analizar"):
         # Simulación de procesamiento
         with st.spinner("Analizando..."):
             import time
-            time.sleep(2)  # Simula tiempo de análisis
-
+            time.sleep(1)  # Simula tiempo de análisis
         
 
         # Resultados simulados

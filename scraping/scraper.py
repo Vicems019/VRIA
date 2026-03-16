@@ -17,9 +17,10 @@ SITE_CONFIGS = {
         "cookies_btn":    (By.XPATH,      "//button[contains(., 'Aceptar')]"),
         "bloque":         (By.CSS_SELECTOR, "[class*='commentDataContainer']"),
         "paginacion": {
-            "tipo":        "boton",   # 👈 "boton" | "numerada"
+            "tipo":        "boton",
             "selector":    (By.XPATH, "//button[contains(., 'Cargar más opiniones')]"),
             "max_paginas": None,
+            "popup": False
         },
         "campos": {
             "rating": {
@@ -42,24 +43,26 @@ SITE_CONFIGS = {
                 "selector": (By.CSS_SELECTOR, "[data-testid='cons'] li"),
                 "tipo": "lista",
             },
-        }
+        },
+        "filtros": None
     },
     "mediamarkt.es": {
-        "scroll_speed": 2.2,
+        "scroll_speed": 2.4,
         "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
         "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
         "paginacion": {
-            "tipo":        "numerada",  # 👈 paginación por números
-            "selector":    None,
+            "tipo":        "numerada",
+            "selector": None,
             "max_paginas": 5,
+            "popup": False
         },
         "campos": {
             "rating": {
                 "selector": (By.CSS_SELECTOR, "[data-test='mms-customer-rating-count']"),
-                "tipo": "rating_slash",   # viene como "5 / 5", nuevo tipo necesario
+                "tipo": "rating_slash",
             },
             "titulo": {
-                "selector": (By.CSS_SELECTOR, "p.ixvBRV"),   # ⚠️ clase generada, puede cambiar
+                "selector": (By.CSS_SELECTOR, "p.ixvBRV"),
                 "tipo": "text",
             },
             "comentario": {
@@ -74,38 +77,44 @@ SITE_CONFIGS = {
                 "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-cons'] ~ ul li p"),
                 "tipo": "lista",
             },
-        }
+        },
+        "filtros": None
     },
-    "amazon.es": {
-        "scroll_speed": 2.2,
-        "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
-        "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
+    "es.aliexpress.com": {
+        "cookies_btn": (By.XPATH, "//button[contains(., 'Aceptar cookies')]"),
+        "bloque":      (By.CSS_SELECTOR, "div.list--itemBox--je_KNzb"),
         "paginacion": {
-            "tipo":        "numerada",  # 👈 paginación por números
-            "selector":    None,
-            "max_paginas": 5,
+            "tipo":        "boton",
+            "selector": (By.XPATH, "//button[.//span[text()='Ver más']]"),
+            "max_paginas": None,
+            "popup": True,
+            "popup_selector": (By.CSS_SELECTOR, "div.comet-v2-modal-body")
         },
+        "scroll_speed": 1.2,
         "campos": {
             "rating": {
-                "selector": (By.CSS_SELECTOR, "[data-test='mms-customer-rating-count']"),
-                "tipo": "rating_slash",   # viene como "5 / 5", nuevo tipo necesario
-            },
-            "titulo": {
-                "selector": (By.CSS_SELECTOR, "p.ixvBRV"),   # ⚠️ clase generada, puede cambiar
-                "tipo": "text",
-            },
+                "selector": (By.CSS_SELECTOR, "span.comet-icon-starreviewfilled"), 
+                "tipo": "rating_stars_count"
+                },
             "comentario": {
-                "selector": (By.CSS_SELECTOR, "[data-test='mms-review-full'] span"),
-                "tipo": "text",
-            },
-            "pros": {
-                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-pro'] ~ ul li p"),
-                "tipo": "lista",
-            },
-            "contras": {
-                "selector": (By.CSS_SELECTOR, "[data-test='review-feedback-cons'] ~ ul li p"),
-                "tipo": "lista",
-            },
+                "selector": (By.CSS_SELECTOR, "div.list--itemReview--d9Z9Z5Z"),    
+                "tipo": "text"
+                },
+            "fecha": {
+                "selector": (By.CSS_SELECTOR, "div.list--itemInfo--VEcgSFh span"),
+                "tipo": "fecha_pipe"
+                },
+            "variante": {
+                "selector": (By.CSS_SELECTOR, "div.list--itemSku--idEQSGC"),
+                "tipo": "text"
+                },
+        },
+        "filtros": {
+            "pais": { # ESP
+                "activo": True,
+                "selector": (By.CSS_SELECTOR, "div.filter--filterItem--AEUeCbl span.ES"),
+                "click_padre": True
+            }
         }
     },
 }
@@ -115,16 +124,16 @@ def scrape_opiniones(url):
     config = SITE_CONFIGS.get(domain)
 
     if not config:
-        raise ValueError(f"❌ No hay configuración para: {domain}")
+        raise ValueError(f"No hay configuración para: {domain}")
 
-    # — Iniciar driver —
+    # Iniciar driver
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
     driver = uc.Chrome(options=options, version_main=145)
     driver.get(url)
     time.sleep(2.2)
 
-    # — Cerrar cookies —
+    # Cerrar cookies
     try:
         by, sel = config["cookies_btn"]
         driver.find_element(by, sel).click()
@@ -133,10 +142,7 @@ def scrape_opiniones(url):
     except:
         print("ℹ️ No hay banner de cookies")
 
-    # — Paginación —
-    su.paginar(driver, config)
-
-    # — Extracción —
+    # Extracción
     print("\n📋 Extrayendo opiniones...\n")
     opiniones = su.paginar(driver, config)
     print(f"Total: {len(opiniones)}")
@@ -149,6 +155,7 @@ def scrape_opiniones(url):
 if __name__ == "__main__":
     urlpcc = "https://www.pccomponentes.com/opiniones/krom-kertz-rgb-238-led-fullhd-200hz-g-sync-compatible"
     urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
-    urlamz = "https://www.amazon.es/product-reviews/B0FHQFFDJ6/ref=cm_cr_dp_d_show_all_btm?ie=UTF8"
-    resultados = scrape_opiniones(urlamz)
+    urlax = "https://es.aliexpress.com/item/1005005952420757.html?spm=a2g0o.best.0.0.77b922aeMkiNt7&pdp_npi=6%40dis%21EUR%214%2C61%E2%82%AC%210%2C99%E2%82%AC%21%21%21%21%21%402103892f17736749760602052e01ac%2112000035000006810%21btfaff%21%21%21%211%210%21&afTraceInfo=1005005952420757__pc__pcBestMore2Love__oU6Kj8D__1773674976369&gatewayAdapt=glo2esp#nav-review"
+
+    resultados = scrape_opiniones(urlax)
     print(resultados)
