@@ -5,9 +5,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
+import sys
 import undetected_chromedriver as uc
 import random
 import scraper_utils as su
+import os
+
+# Configuración de rutas para importar desde n8n_workflows
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+workflows_path = os.path.join(project_root, "n8n_workflows")
+
+if workflows_path not in sys.path:
+    sys.path.append(workflows_path)
+
+try:
+    from datos_enviar import enviar_n8n
+except ImportError:
+    print("⚠️ No se pudo importar 'datos_enviar' desde n8n_workflows")
+    def enviar_n8n(x): print("Simulación: enviando datos a n8n...")
+
 
 # CONFIGURACIÓN DEL SITIO
 
@@ -157,5 +174,12 @@ if __name__ == "__main__":
     urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
     urlax = "https://es.aliexpress.com/item/1005005952420757.html?spm=a2g0o.best.0.0.77b922aeMkiNt7&pdp_npi=6%40dis%21EUR%214%2C61%E2%82%AC%210%2C99%E2%82%AC%21%21%21%21%21%402103892f17736749760602052e01ac%2112000035000006810%21btfaff%21%21%21%211%210%21&afTraceInfo=1005005952420757__pc__pcBestMore2Love__oU6Kj8D__1773674976369&gatewayAdapt=glo2esp#nav-review"
 
-    resultados = scrape_opiniones(urlax)
+    resultados = scrape_opiniones(urlmm)
+
     print(resultados)
+
+    if resultados:
+        resultado_limpio = enviar_n8n(resultados)
+        print(resultado_limpio)
+    else:
+        print("❌ No se obtuvieron resultados para enviar.")
