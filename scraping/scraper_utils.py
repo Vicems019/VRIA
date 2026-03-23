@@ -8,7 +8,7 @@ def scroll_suave(driver, speed = 1, stop_before = 300):
     altura_total = driver.execute_script("return document.body.scrollHeight")
     
     while altura_actual < altura_total - stop_before:
-        incremento = random.randint(70, 270) * speed
+        incremento = random.randint(100, 300) * speed
         altura_actual += incremento
         driver.execute_script(f"window.scrollTo(0, {altura_actual});")
         

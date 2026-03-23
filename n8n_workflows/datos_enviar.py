@@ -5,11 +5,16 @@ def enviar_n8n(resultados):
         print("No hay resultados para enviar.")
         return
         
+    print("Resultados:", resultados)
     total_resenas = len(resultados)
+
+    print("Total reseñas extraidas:", total_resenas)
     
     # Calcular promedio rating
+    # TODO ERROR EN LOS RATINGS MIRARLO
     ratings_validos = []
     for r in resultados:
+        print(r)
         # Algunos ratings vienen como string o no existen
         try:
             rating = r.get("rating")
@@ -60,12 +65,16 @@ def enviar_n8n(resultados):
 
     print(f"Enviando {total_resenas} reseñas a n8n...")
     webhook_url = "http://localhost:5678/webhook/analizar-producto"
+    webhook_url_test = "http://localhost:5678/webhook-test/analizar-producto"
+
     try:
-        response = requests.post(webhook_url, json=datos)
+        response = requests.post(webhook_url_test, json=datos)
         response.raise_for_status()
         print(f"✅ Datos enviados a n8n correctamente. Código: {response.status_code}")
+        return response.json()
     except requests.exceptions.RequestException as e:
         print(f"❌ Error al enviar datos a n8n: {e}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     pass

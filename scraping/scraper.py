@@ -64,7 +64,7 @@ SITE_CONFIGS = {
         "filtros": None
     },
     "mediamarkt.es": {
-        "scroll_speed": 2.4,
+        "scroll_speed": 3,
         "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
         "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
         "paginacion": {
@@ -146,6 +146,8 @@ def scrape_opiniones(url):
     # Iniciar driver
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
+    options.add_argument("--headless") # TODO COMENTARLO Y MANEJARLO CORRECTAMENTE AL TENER LAS PÁGINAS PULIDAS
+    options.add_argument("--disable-gpu")
     driver = uc.Chrome(options=options, version_main=145)
     driver.get(url)
     time.sleep(2.2)
@@ -164,8 +166,28 @@ def scrape_opiniones(url):
     opiniones = su.paginar(driver, config)
     print(f"Total: {len(opiniones)}")
     
-    driver.quit()
+    
+    if driver:
+        driver.quit()
+
     return opiniones
+    
+def analizar_url(url):
+    """
+    Función unificada para ser llamada desde Streamlit.
+    Realiza el scraping y envía los datos a n8n.
+    """
+    try:
+        opiniones = scrape_opiniones(url)
+
+        print("Opiniones extraidas:", opiniones)
+        if opiniones:
+            resultado = enviar_n8n(opiniones)
+            return resultado
+        else:
+            return {"error": "No se encontraron opiniones para analizar."}
+    except Exception as e:
+        return {"error": str(e)}
 
 #  EJECUCIÓN
 
