@@ -81,6 +81,8 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
             print("🔲 Popup abierto")
             time.sleep(0.8)
 
+            # Aplicar filtros
+            aplicar_filtros(driver, config)
             popup_body = driver.find_element(By.CSS_SELECTOR, ".comet-v2-modal-body")
             scroll_popup(driver, popup_body, speed=1, stop_before=300)
             print("✅ Scroll del popup completado")
@@ -88,9 +90,6 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
         except Exception as e:
             print(f"⚠️ No se pudo abrir el popup: {e}")
         return []
-
-    # Aplicar filtros
-    aplicar_filtros(driver, config)
 
     while True:
         try:
@@ -187,10 +186,27 @@ def aplicar_filtros(driver, config):
 
                 if cfg.get("click_padre"):
                     el = el.find_element(By.XPATH, ".//..")
+                    print(f"Click en el padre {el.get_attribute('class')}")
                 
-                driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", el)
-                time.sleep(1)
+                print(f"Intentando clickear en: {el.get_attribute('class')}")
+
                 driver.execute_script("arguments[0].click();", el)
+
+                clase = el.get_attribute("class")
+                time.sleep(10)
+                if "active" in clase:
+                    print(f"⏩ El filtro '{nombre}' ya está activo, saltando...")
+                else:
+                    try:
+                        # Intento de click con ActionChains (simula ratón real)
+                        actions = ActionChains(driver)
+                        actions.move_to_element(el).click().perform()
+                    except:
+                        # Si falla, usamos el click de JS que ya tenías como plan B
+                        driver.execute_script("arguments[0].click();", el)
+                    
+                    print(f"✅ Filtro '{nombre}' clickeado")
+
                 print(f"✅ Filtro '{nombre}' aplicado")
             except Exception as e:
                 print(f"Error al aplicar filtro '{nombre}': {e}")
@@ -213,3 +229,4 @@ def scroll_popup(driver, popup_element, speed=1, stop_before=300):
 
         driver.execute_script("arguments[0].scrollTop = arguments[1];", popup_element, scroll_top)
         time.sleep(random.uniform(0.05, 0.3))
+        time.sleep(4)

@@ -129,8 +129,8 @@ SITE_CONFIGS = {
         "filtros": {
             "pais": { # ESP
                 "activo": True,
-                "selector": (By.CSS_SELECTOR, "div.filter--filterItem--AEUeCbl span.ES"),
-                "click_padre": True
+                "selector": (By.XPATH, "//div[contains(@class, 'filterItem')] [span[contains(@class, 'ES')]]"),
+                "click_padre": False
             }
         }
     },
