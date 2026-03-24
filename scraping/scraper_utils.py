@@ -2,13 +2,14 @@ import time
 import random
 from selenium.webdriver.common.by import By
 
+# popup
 
 def scroll_suave(driver, speed = 1, stop_before = 300):
     altura_actual = driver.execute_script("return window.scrollY")
     altura_total = driver.execute_script("return document.body.scrollHeight")
     
     while altura_actual < altura_total - stop_before:
-        incremento = random.randint(100, 300) * speed
+        incremento = random.randint(300, 350) * speed
         altura_actual += incremento
         driver.execute_script(f"window.scrollTo(0, {altura_actual});")
         
@@ -67,7 +68,6 @@ def _extraer_bloques(driver, by_bloque, sel_bloque, config):
         for bloque in bloques
     ]
 
-
 def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
     by_boton, sel_boton = pag_cfg["selector"]
     
@@ -79,10 +79,15 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
             boton_ver_mas = driver.find_element(by_boton, sel_boton)
             driver.execute_script("arguments[0].click();", boton_ver_mas)
             print("🔲 Popup abierto")
-            time.sleep(2)
+            time.sleep(0.8)
+
+            popup_body = driver.find_element(By.CSS_SELECTOR, ".comet-v2-modal-body")
+            scroll_popup(driver, popup_body, speed=1, stop_before=300)
+            print("✅ Scroll del popup completado")
+
         except Exception as e:
             print(f"⚠️ No se pudo abrir el popup: {e}")
-            return []
+        return []
 
     # Aplicar filtros
     aplicar_filtros(driver, config)
@@ -102,7 +107,7 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
             time.sleep(2)
             driver.execute_script("arguments[0].click();", botones[0])
             print("⏳ Cargando más...")
-            time.sleep(4)
+            time.sleep(3)
 
             timeout = 10
             while timeout > 0:
@@ -135,7 +140,7 @@ def _paginar_numerada(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config
     while True:
         try:
             scroll_suave(driver, scroll_cfg)
-            time.sleep(1)
+            time.sleep(0.8)
 
             # 👇 Extrae ANTES de cambiar de página
             parcial = _extraer_bloques(driver, by_bloque, sel_bloque, config)
@@ -152,10 +157,10 @@ def _paginar_numerada(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config
                 f"//button[@translate='no' and @data-ignore-a11y='true' and text()='{pagina_siguiente}']"
             )
             driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", boton)
-            time.sleep(1)
+            time.sleep(0.8)
             driver.execute_script("arguments[0].click();", boton)
             print(f"⏳ Yendo a página {pagina_siguiente}...")
-            time.sleep(3)
+            time.sleep(2)
             pagina_actual += 1
 
         except:
@@ -193,18 +198,18 @@ def aplicar_filtros(driver, config):
     except:
         print("No se han agregado filtros")
         return
-
-def scroll_popup(driver, popup_element, speed=1, stop_before=300):
-    driver.execute_script("arguments[0].click();", popup_element)
-    time.sleep(0.4)
-
-    scroll_top = driver.execute_script("return arguments[0].scrollTop", popup_element)
-    scroll_bottom = driver.execute_script("return arguments[0].scrollHeight", popup_element)
     
-    while scroll_top < scroll_bottom - stop_before:
-        incremento  = random.randint(60, 250) * speed
-        scroll_top += incremento
+def scroll_popup(driver, popup_element, speed=1, stop_before=300):
+    scroll_top = 0
+
+    while True:
+        scroll_height = driver.execute_script("return arguments[0].scrollHeight", popup_element)
+
+        if scroll_top >= scroll_height - stop_before:
+            break
+
+        incremento = random.randint(60, 250) * speed
+        scroll_top = min(scroll_top + incremento, scroll_height)
 
         driver.execute_script("arguments[0].scrollTop = arguments[1];", popup_element, scroll_top)
         time.sleep(random.uniform(0.05, 0.3))
-        scroll_alto = driver.execute_script("return arguments[0].scrollHeight", popup_element)

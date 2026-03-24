@@ -105,7 +105,7 @@ SITE_CONFIGS = {
             "selector": (By.XPATH, "//button[.//span[text()='Ver más']]"),
             "max_paginas": None,
             "popup": True,
-            "popup_selector": (By.CSS_SELECTOR, "div.comet-v2-modal-body")
+            "popup_selector": (By.CSS_SELECTOR, ".comet-v2-modal-body")
         },
         "scroll_speed": 1.2,
         "campos": {
@@ -146,18 +146,18 @@ def scrape_opiniones(url):
     # Iniciar driver
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
-    options.add_argument("--headless") # TODO COMENTARLO Y MANEJARLO CORRECTAMENTE AL TENER LAS PÁGINAS PULIDAS
+    # options.add_argument("--headless") # TODO COMENTARLO Y MANEJARLO CORRECTAMENTE AL TENER LAS PÁGINAS PULIDAS
     options.add_argument("--disable-gpu")
     driver = uc.Chrome(options=options, version_main=145)
     driver.get(url)
-    time.sleep(2.2)
+
 
     # Cerrar cookies
     try:
         by, sel = config["cookies_btn"]
         driver.find_element(by, sel).click()
         print("✅ Cookies aceptadas")
-        time.sleep(1)
+        time.sleep(0.3)
     except:
         print("ℹ️ No hay banner de cookies")
 
@@ -172,6 +172,7 @@ def scrape_opiniones(url):
 
     return opiniones
     
+# EJECUCIÓN DESDE APP.PY
 def analizar_url(url):
     """
     Función unificada para ser llamada desde Streamlit.
@@ -196,9 +197,7 @@ if __name__ == "__main__":
     urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
     urlax = "https://es.aliexpress.com/item/1005005952420757.html?spm=a2g0o.best.0.0.77b922aeMkiNt7&pdp_npi=6%40dis%21EUR%214%2C61%E2%82%AC%210%2C99%E2%82%AC%21%21%21%21%21%402103892f17736749760602052e01ac%2112000035000006810%21btfaff%21%21%21%211%210%21&afTraceInfo=1005005952420757__pc__pcBestMore2Love__oU6Kj8D__1773674976369&gatewayAdapt=glo2esp#nav-review"
 
-    resultados = scrape_opiniones(urlmm)
-
-    print(resultados)
+    resultados = scrape_opiniones(urlax)
 
     if resultados:
         resultado_limpio = enviar_n8n(resultados)

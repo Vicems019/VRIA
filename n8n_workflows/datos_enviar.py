@@ -1,67 +1,49 @@
 import requests
+import os
+import sys
+
+# Asegurar que la raíz del proyecto esté en el path para importar otros módulos
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+try:
+    from analysis.preprocessor import preprocess_data
+except ImportError:
+    print("⚠️ No se pudo importar 'preprocess_data'. Se usará una versión mínima.")
+    def preprocess_data(resultados):
+        return {
+            "total_resenas": len(resultados),
+            "rating_promedio": 0.0,
+            "comentarios": [r.get("comentario", "") for r in resultados if r.get("comentario")],
+            "pros_mencionados": [],
+            "contras_mencionados": []
+        }
 
 def enviar_n8n(resultados):
     if not resultados:
         print("No hay resultados para enviar.")
         return
         
-    print("Resultados:", resultados)
     total_resenas = len(resultados)
 
     print("Total reseñas extraidas:", total_resenas)
     
-    # Calcular promedio rating
-    # TODO ERROR EN LOS RATINGS MIRARLO
-    ratings_validos = []
-    for r in resultados:
-        print(r)
-        # Algunos ratings vienen como string o no existen
-        try:
-            rating = r.get("rating")
-            if rating is not None:
-                ratings_validos.append(float(rating))
-        except (ValueError, TypeError):
-            continue
-            
-    rating_promedio = 0.0
-    if ratings_validos:
-        rating_promedio = round(sum(ratings_validos) / len(ratings_validos), 1)
+    # Preprocesar datos (limpieza de ratings, pros, contras, etc.)
+    datos = preprocess_data(resultados)
 
-    # Extraer comentarios
-    comentarios = [r.get("comentario", "") for r in resultados if r.get("comentario")]
+    total_resenas = datos["total_resenas"]
+    rating_promedio = datos["rating_promedio"]
+    comentarios = datos["comentarios"]
+    pros_mencionados = datos["pros_mencionados"]
+    contras_mencionados = datos["contras_mencionados"]
 
-    print(comentarios)
-
-    # Extraer pros y contras
-    pros_mencionados = []
-    contras_mencionados = []
-    for r in resultados:
-        pros = r.get("pros")
-        if pros:
-            if isinstance(pros, list):
-                pros_mencionados.extend(pros)
-            else:
-                pros_mencionados.append(pros)
-                
-        contras = r.get("contras")
-        if contras:
-            if isinstance(contras, list):
-                contras_mencionados.extend(contras)
-            else:
-                contras_mencionados.append(contras)
-
-    print(pros_mencionados)
-    print(contras_mencionados)
-
-    datos = {
-        "total_resenas": total_resenas,
-        "rating_promedio": rating_promedio,
-        "comentarios": comentarios,
-        "pros_mencionados": pros_mencionados,
-        "contras_mencionados": contras_mencionados
-    }
-
-    print(datos)
+    print('Total Reseñas', total_resenas)
+    print('Rating Promedio', rating_promedio)
+    print('Comentarios', comentarios)
+    print('Pros', pros_mencionados)
+    print('Contras', contras_mencionados)
 
     print(f"Enviando {total_resenas} reseñas a n8n...")
     webhook_url = "http://localhost:5678/webhook/analizar-producto"

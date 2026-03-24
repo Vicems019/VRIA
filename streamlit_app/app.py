@@ -40,17 +40,15 @@ if st.button("Analizar"):
         else:
             # Resultados reales
             st.subheader("Resultados del Análisis")
-            st.write(f"URL analizada: {url}")
             
-            # Asumiendo que el n8n devuelve { "sentimiento": "...", "pros": "...", "contras": "...", "resumen": "..." }
-            # O similar. Ajustamos según la respuesta esperada del webhook.
-            
-            sentimiento = resultado.get("sentimiento", "No disponible")
+            sentimiento = resultado.get("sentimiento_general", "No disponible").title()
+            puntuacion_final = resultado.get("puntuacion_final", "No disponible")
             pros = resultado.get("pros", "No disponible")
             contras = resultado.get("contras", "No disponible")
             resumen = resultado.get("resumen", "No disponible")
 
             st.markdown(f"**Sentimiento general:** {sentimiento}")
+            st.markdown(f"**Puntuación final:** {puntuacion_final}/5")
             
             col1, col2 = st.columns(2)
             with col1:
