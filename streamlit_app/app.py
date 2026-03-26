@@ -18,6 +18,13 @@ except ImportError:
     st.error("No se pudo importar el scraper. Verifica las rutas.")
     def analizar_url(url): return {"error": "Scraper no disponible"}
 
+
+
+
+def limpiar_texto():
+    st.session_state['url'] = ''
+
+
 # --- Título y descripción ---
 st.set_page_config(page_title="Análisis de sentimiento de Productos", layout="centered")
 st.title("Análisis de sentimiento de Productos")
@@ -27,13 +34,23 @@ mostrando resultados como descripción, pros y contras.
 """)
 
 # --- Entrada del usuario ---
-url = st.text_input("Introduce la URL del producto")
+
+col1, col2 = st.columns([4,1])
+
+with col1:
+    url = st.text_input("Introduce la URL del producto", key="url")
+
+with col2:
+    st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
+    st.button("Limpiar 🗑️", on_click=limpiar_texto)
 
 # --- Botón para iniciar análisis ---
 if st.button("Analizar"):
     if url:
         with st.spinner("Analizando opiniones... esto puede tardar unos segundos"):
             resultado = analizar_url(url)
+
+
         
         if "error" in resultado:
             st.error(f"Error en el análisis: {resultado['error']}")
@@ -48,7 +65,7 @@ if st.button("Analizar"):
             resumen = resultado.get("resumen", "No disponible")
 
             st.markdown(f"**Sentimiento general:** {sentimiento}")
-            st.markdown(f"**Puntuación final:** {puntuacion_final}/5")
+            st.markdown(f"**Puntuación final:** {puntuacion_final}/10")
             
             col1, col2 = st.columns(2)
             with col1:
@@ -62,3 +79,4 @@ if st.button("Analizar"):
             st.write(resumen)
     else:
         st.error("Por favor introduce una URL")
+

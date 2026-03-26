@@ -87,6 +87,11 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
             scroll_popup(driver, popup_body, speed=1, stop_before=300)
             print("✅ Scroll del popup completado")
 
+            # Extraer los datos
+            opiniones = _extraer_bloques(driver, by_bloque, sel_bloque, config)
+            print(f"✅ Total extraídas: {len(opiniones)}")
+            return opiniones
+
         except Exception as e:
             print(f"⚠️ No se pudo abrir el popup: {e}")
         return []
@@ -106,7 +111,6 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
             time.sleep(2)
             driver.execute_script("arguments[0].click();", botones[0])
             print("⏳ Cargando más...")
-            time.sleep(3)
 
             timeout = 10
             while timeout > 0:
@@ -186,14 +190,11 @@ def aplicar_filtros(driver, config):
 
                 if cfg.get("click_padre"):
                     el = el.find_element(By.XPATH, ".//..")
-                    print(f"Click en el padre {el.get_attribute('class')}")
-                
-                print(f"Intentando clickear en: {el.get_attribute('class')}")
 
                 driver.execute_script("arguments[0].click();", el)
 
                 clase = el.get_attribute("class")
-                time.sleep(10)
+                time.sleep(1)
                 if "active" in clase:
                     print(f"⏩ El filtro '{nombre}' ya está activo, saltando...")
                 else:
@@ -215,10 +216,13 @@ def aplicar_filtros(driver, config):
         print("No se han agregado filtros")
         return
     
-def scroll_popup(driver, popup_element, speed=1, stop_before=300):
+def scroll_popup(driver, popup_element, speed=1, stop_before=300, max_seconds=7):
     scroll_top = 0
 
-    while True:
+    deadline = time.time() + max_seconds
+
+
+    while time.time() < deadline:
         scroll_height = driver.execute_script("return arguments[0].scrollHeight", popup_element)
 
         if scroll_top >= scroll_height - stop_before:
@@ -228,5 +232,4 @@ def scroll_popup(driver, popup_element, speed=1, stop_before=300):
         scroll_top = min(scroll_top + incremento, scroll_height)
 
         driver.execute_script("arguments[0].scrollTop = arguments[1];", popup_element, scroll_top)
-        time.sleep(random.uniform(0.05, 0.3))
-        time.sleep(4)
+        time.sleep(0.1)

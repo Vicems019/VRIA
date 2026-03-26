@@ -39,11 +39,11 @@ def enviar_n8n(resultados):
     pros_mencionados = datos["pros_mencionados"]
     contras_mencionados = datos["contras_mencionados"]
 
-    print('Total Reseñas', total_resenas)
-    print('Rating Promedio', rating_promedio)
-    print('Comentarios', comentarios)
-    print('Pros', pros_mencionados)
-    print('Contras', contras_mencionados)
+    # print('Total Reseñas', total_resenas)
+    # print('Rating Promedio', rating_promedio)
+    # print('Comentarios', comentarios)
+    # print('Pros', pros_mencionados)
+    # print('Contras', contras_mencionados)
 
     print(f"Enviando {total_resenas} reseñas a n8n...")
     webhook_url = "http://localhost:5678/webhook/analizar-producto"
