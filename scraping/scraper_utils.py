@@ -1,6 +1,8 @@
 import time
 import random
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # popup
 
@@ -107,8 +109,8 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
                 print("✅ No hay más botón, fin")
                 break
 
-            driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", botones[0])
-            time.sleep(2)
+            driver.execute_script("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", botones[0])
+            time.sleep(0.3)
             driver.execute_script("arguments[0].click();", botones[0])
             print("⏳ Cargando más...")
 
@@ -131,21 +133,20 @@ def _paginar_boton(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
     print(f"✅ Total extraídas: {len(opiniones)}")
     return opiniones
 
-
 def _paginar_numerada(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config):
-    pagina_actual    = 1
+    pagina_actual     = 1
     opiniones_totales = []
     max_paginas       = pag_cfg.get("max_paginas")
 
-    # Aplicar filtros
     aplicar_filtros(driver, config)
-    
+
     while True:
         try:
-            scroll_suave(driver, scroll_cfg)
-            time.sleep(0.8)
+            # Esperar a que los bloques estén cargados
+            WebDriverWait(driver, 14).until(
+                EC.presence_of_element_located((by_bloque, sel_bloque))
+            )
 
-            # 👇 Extrae ANTES de cambiar de página
             parcial = _extraer_bloques(driver, by_bloque, sel_bloque, config)
             opiniones_totales.extend(parcial)
             print(f"📄 Página {pagina_actual}: {len(parcial)} opiniones")
@@ -159,15 +160,19 @@ def _paginar_numerada(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config
                 By.XPATH,
                 f"//button[@translate='no' and @data-ignore-a11y='true' and text()='{pagina_siguiente}']"
             )
-            driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", boton)
-            time.sleep(0.8)
+            driver.execute_script("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", boton)
+            
+            primer_bloque = driver.find_element(by_bloque, sel_bloque)
             driver.execute_script("arguments[0].click();", boton)
             print(f"⏳ Yendo a página {pagina_siguiente}...")
-            time.sleep(2)
+            WebDriverWait(driver, 14).until(
+                EC.staleness_of(primer_bloque)
+            )
+
             pagina_actual += 1
 
-        except:
-            # No hay más páginas, extrae la última
+        except Exception as e:
+            print(f"❌ ERROR: {type(e).__name__}: {e}")
             parcial = _extraer_bloques(driver, by_bloque, sel_bloque, config)
             opiniones_totales.extend(parcial)
             print(f"✅ Fin en página {pagina_actual}. Total: {len(opiniones_totales)}")
@@ -194,7 +199,7 @@ def aplicar_filtros(driver, config):
                 driver.execute_script("arguments[0].click();", el)
 
                 clase = el.get_attribute("class")
-                time.sleep(1)
+                time.sleep(0.8)
                 if "active" in clase:
                     print(f"⏩ El filtro '{nombre}' ya está activo, saltando...")
                 else:
@@ -216,7 +221,7 @@ def aplicar_filtros(driver, config):
         print("No se han agregado filtros")
         return
     
-def scroll_popup(driver, popup_element, speed=1, stop_before=300, max_seconds=7):
+def scroll_popup(driver, popup_element, speed=1, stop_before=300, max_seconds=6):
     scroll_top = 0
 
     deadline = time.time() + max_seconds
@@ -228,7 +233,7 @@ def scroll_popup(driver, popup_element, speed=1, stop_before=300, max_seconds=7)
         if scroll_top >= scroll_height - stop_before:
             break
 
-        incremento = random.randint(60, 250) * speed
+        incremento = random.randint(80, 300) * speed
         scroll_top = min(scroll_top + incremento, scroll_height)
 
         driver.execute_script("arguments[0].scrollTop = arguments[1];", popup_element, scroll_top)

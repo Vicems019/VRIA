@@ -136,6 +136,12 @@ SITE_CONFIGS = {
     },
 }
 
+prefs = {
+    "profile.managed_default_content_settings.images": 2,
+    "profile.managed_default_content_settings.fonts": 2
+}
+
+
 def scrape_opiniones(url):
     domain = su.get_domain(url)
     config = SITE_CONFIGS.get(domain)
@@ -155,47 +161,43 @@ def scrape_opiniones(url):
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-    options.add_argument(f"user-agent={user_agent}")
+    options.add_experimental_option("prefs", prefs)
 
     driver = uc.Chrome(options=options, version_main=145)
-    driver.get(url)
 
-    try:
+    try: 
+
+        driver.get(url)
+        time.sleep(1.8)
+
+        # Cerrar cookies
+        try:
+            by, sel = config["cookies_btn"]
+            WebDriverWait(driver, 14).until(EC.element_to_be_clickable((by, sel))).click()
+            print("✅ Cookies aceptadas")
+            time.sleep(0.3)
+        except:
+            print("ℹ️ No hay banner de cookies")
+
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight * 0.65);")
+        time.sleep(1.8)
         
-        # Espera aleatoria para que Cloudflare "piense"
-        time.sleep(random.uniform(5, 8)) 
-        
-        # Si Cloudflare te pide un check, a veces basta con un scroll
-        driver.execute_script("window.scrollTo(0, 400);")
-        time.sleep(2)
-        
-        # Guardar captura para verificar si pasamos el muro
-        driver.save_screenshot("verificacion.png")
-        
+        bloques = driver.find_elements(By.CSS_SELECTOR, "[data-test='single-review-card']")
+        print(f"🔍 Bloques encontrados: {len(bloques)}")
+
+        WebDriverWait(driver, 14).until(
+            EC.presence_of_element_located(config["bloque"])
+        )
+
+        opiniones = su.paginar(driver, config)
+
+        print(f"Total: {len(opiniones)}")
+
+        return opiniones
+
     except Exception as e:
-        print(f"Error: {e}")
-        driver.quit()
-
-    # Cerrar cookies
-    try:
-        by, sel = config["cookies_btn"]
-        driver.find_element(by, sel).click()
-        print("✅ Cookies aceptadas")
-        time.sleep(0.3)
-    except:
-        print("ℹ️ No hay banner de cookies")
-
-    # Extracción
-    print("\n📋 Extrayendo opiniones...\n")
-    opiniones = su.paginar(driver, config)
-    print(f"Total: {len(opiniones)}")
-    
-    
-    if driver:
-        driver.quit()
-
-    return opiniones
+        print(f"❌ Error en scrape_opiniones: {type(e).__name__}: {e}")
+        return []
     
 # EJECUCIÓN DESDE APP.PY
 def analizar_url(url):
@@ -222,7 +224,7 @@ if __name__ == "__main__":
     urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
     urlax = "https://es.aliexpress.com/item/1005005952420757.html?spm=a2g0o.best.0.0.77b922aeMkiNt7&pdp_npi=6%40dis%21EUR%214%2C61%E2%82%AC%210%2C99%E2%82%AC%21%21%21%21%21%402103892f17736749760602052e01ac%2112000035000006810%21btfaff%21%21%21%211%210%21&afTraceInfo=1005005952420757__pc__pcBestMore2Love__oU6Kj8D__1773674976369&gatewayAdapt=glo2esp#nav-review"
 
-    resultados = scrape_opiniones(urlpcc)
+    resultados = scrape_opiniones(urlax)
 
     print(resultados)
 
