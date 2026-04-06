@@ -29,47 +29,13 @@ except ImportError:
 # CONFIGURACIÓN DEL SITIO
 
 SITE_CONFIGS = {
-    "pccomponentes.com": {
-        "scroll_speed": 1.2,
-        "cookies_btn":    (By.XPATH,      "//button[contains(., 'Aceptar')]"),
-        "bloque":         (By.CSS_SELECTOR, "[class*='commentDataContainer']"),
-        "paginacion": {
-            "tipo":        "boton",
-            "selector":    (By.XPATH, "//button[contains(., 'Cargar más opiniones')]"),
-            "max_paginas": None,
-            "popup": False
-        },
-        "campos": {
-            "rating": {
-                "selector": (By.CSS_SELECTOR, "[data-testid='rating-bar-percent']"),
-                "tipo": "rating_style",
-            },
-            "fecha": {
-                "selector": (By.CSS_SELECTOR, "[class*='captionRegular']"),
-                "tipo": "text",
-            },
-            "comentario": {
-                "selector": (By.CSS_SELECTOR, "[class*='body2Regular']"),
-                "tipo": "text",
-            },
-            "pros": {
-                "selector": (By.CSS_SELECTOR, "[data-testid='pros'] li"),
-                "tipo": "lista",
-            },
-            "contras": {
-                "selector": (By.CSS_SELECTOR, "[data-testid='cons'] li"),
-                "tipo": "lista",
-            },
-        },
-        "filtros": None
-    },
     "mediamarkt.es": {
         "scroll_speed": 3,
         "cookies_btn": (By.XPATH,       "//button[contains(., 'Aceptar')]"),
         "bloque":      (By.CSS_SELECTOR, "[data-test='single-review-card']"),
         "paginacion": {
             "tipo":        "numerada",
-            "selector": None,
+            "selector": (By.XPATH, "//button[@translate='no' and @data-ignore-a11y='true' and text()='{}']"),
             "max_paginas": 5,
             "popup": False
         },
@@ -134,6 +100,36 @@ SITE_CONFIGS = {
             }
         }
     },
+    "decathlon.es": {
+    "scroll_speed": 1.5,
+    "cookies_btn": (By.ID, "didomi-notice-agree-button"),
+    "bloque": (By.CSS_SELECTOR, "div.review-card"),
+    "paginacion": {
+        "tipo": "numerada",
+        "selector": (By.CSS_SELECTOR, "[data-part='button'][aria-label*='siguiente']"),
+        "max_paginas": 5,
+        "popup": False
+    },
+    "campos": {
+        "rating": {
+            "selector": (By.CSS_SELECTOR, ".vp-star-rating"),
+            "tipo": "rating_aria",
+        },
+        "titulo": {
+            "selector": (By.CSS_SELECTOR, ".review-card__title h3"),
+            "tipo": "text",
+        },
+        "comentario": {
+            "selector": (By.CSS_SELECTOR, "blockquote.review-card__review--long-content"),
+            "tipo": "text",
+        },
+        "fecha": {
+            "selector": (By.XPATH, ".//span[contains(@class, 'reviewer-info__item') and contains(., 'Hace')]"),
+            "tipo": "text",
+        },
+    },
+    "filtros": None
+    },
 }
 
 prefs = {
@@ -143,6 +139,7 @@ prefs = {
 
 
 def scrape_opiniones(url):
+    url = su.normalizar_url(url)
     domain = su.get_domain(url)
     config = SITE_CONFIGS.get(domain)
 
@@ -153,7 +150,7 @@ def scrape_opiniones(url):
 
     # Iniciar driver
     
-    options.add_argument("--headless=new") # TODO COMENTARLO Y MANEJARLO CORRECTAMENTE AL TENER LAS PÁGINAS PULIDAS
+    #options.add_argument("--headless=new") # TODO COMENTARLO Y MANEJARLO CORRECTAMENTE AL TENER LAS PÁGINAS PULIDAS
     options.add_argument("--window-size=1920,1080")
 
     #options.add_argument("--disable-gpu")
@@ -173,7 +170,7 @@ def scrape_opiniones(url):
         # Cerrar cookies
         try:
             by, sel = config["cookies_btn"]
-            WebDriverWait(driver, 14).until(EC.element_to_be_clickable((by, sel))).click()
+            WebDriverWait(driver, 6).until(EC.element_to_be_clickable((by, sel))).click()
             print("✅ Cookies aceptadas")
             time.sleep(0.3)
         except:
@@ -220,11 +217,12 @@ def analizar_url(url):
 #  EJECUCIÓN
 
 if __name__ == "__main__":
-    urlpcc = "https://www.pccomponentes.com/opiniones/krom-kertz-rgb-238-led-fullhd-200hz-g-sync-compatible"
+    
     urlmm = "https://www.mediamarkt.es/es/product/_apple-iphone-17-azul-neblina-256-gb-5g-63-oled-super-retina-xdr-chip-a19-ios-1606127.html"
     urlax = "https://es.aliexpress.com/item/1005005952420757.html?spm=a2g0o.best.0.0.77b922aeMkiNt7&pdp_npi=6%40dis%21EUR%214%2C61%E2%82%AC%210%2C99%E2%82%AC%21%21%21%21%21%402103892f17736749760602052e01ac%2112000035000006810%21btfaff%21%21%21%211%210%21&afTraceInfo=1005005952420757__pc__pcBestMore2Love__oU6Kj8D__1773674976369&gatewayAdapt=glo2esp#nav-review"
-
-    resultados = scrape_opiniones(urlax)
+    urldec = "https://www.decathlon.es/es/p/zapatillas-running-adidas-runblaze-hombre-negro/361354/c1m8929086"
+    
+    resultados = scrape_opiniones(urldec)
 
     print(resultados)
 

@@ -1,5 +1,6 @@
 import time
 import random
+import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -36,6 +37,18 @@ def extraer_campo(bloque, config_campo):
             style = el.get_attribute("style")
             porcentaje = float(style.replace("width:", "").replace("%;", "").strip())
             return round(porcentaje / 100 * 5, 1)
+        elif tipo == "rating_aria":
+            el = bloque.find_element(by, selector)
+            aria = el.get_attribute("aria-label")
+            # "Calificación 5 de 5" → extraer el primer número
+            import re
+            match = re.search(r"(\d+(?:\.\d+)?)\s+de\s+5", aria)
+            return float(match.group(1)) if match else None
+        elif tipo == "rating_aria_label":
+            el = bloque.find_element(by, selector)
+            aria = el.get_attribute("aria-label")
+            match = re.search(r"(\d+(?:\.\d+)?)", aria)
+            return float(match.group(1)) if match else None
         else:
             el = bloque.find_element(by, selector)
             return el.text
@@ -156,10 +169,8 @@ def _paginar_numerada(driver, pag_cfg, scroll_cfg, by_bloque, sel_bloque, config
                 break
 
             pagina_siguiente = pagina_actual + 1
-            boton = driver.find_element(
-                By.XPATH,
-                f"//button[@translate='no' and @data-ignore-a11y='true' and text()='{pagina_siguiente}']"
-            )
+            by_boton, sel_boton = pag_cfg["selector"]
+            boton = driver.find_element(by_boton, sel_boton.format(pagina_siguiente))
             driver.execute_script("arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});", boton)
             
             primer_bloque = driver.find_element(by_bloque, sel_bloque)
@@ -238,3 +249,8 @@ def scroll_popup(driver, popup_element, speed=1, stop_before=300, max_seconds=6)
 
         driver.execute_script("arguments[0].scrollTop = arguments[1];", popup_element, scroll_top)
         time.sleep(0.1)
+
+def normalizar_url(url):
+    url = re.sub(r'/es/p/', '/es/r/', url)
+    #url = re.sub(r'-p-(\d+)\.html', r'-review-\1.html', url)
+    return url
