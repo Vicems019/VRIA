@@ -1,110 +1,65 @@
-# VRIA — Valoraciones y Reseñas con Inteligencia Artificial
+# 🤖 VRIA: Virtual Review Intelligence Analyzer
 
-> ⚠️ **README temporal.** Este documento se actualizará cuando la aplicación esté completamente desarrollada.
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
+![Selenium](https://img.shields.io/badge/Selenium-43B02A?style=for-the-badge&logo=Selenium&logoColor=white)
+![n8n](https://img.shields.io/badge/n8n-FF6D5A?style=for-the-badge&logo=n8n&logoColor=white)
 
-## ¿Qué es VRIA?
-
-VRIA es una aplicación web local que analiza las reseñas de un producto de Amazon y genera un informe estructurado con sus cualidades y defectos, usando web scraping e inteligencia artificial.
-
-El usuario introduce una URL de Amazon, la aplicación extrae automáticamente las reseñas y un modelo LLM local (Ollama) las analiza para devolver un informe en español.
-
----
-
-## Estado actual del proyecto
-
-| Módulo | Estado |
-|---|---|
-| Scraper (BeautifulSoup + Playwright) | 🟡 En desarrollo |
-| Preprocesado de datos | ⬜ Pendiente |
-| Análisis con Ollama | ⬜ Pendiente |
-| Interfaz Streamlit | ⬜ Pendiente |
-| Workflows n8n | ⬜ Pendiente |
+> **VRIA** transforma URLs de productos complejas en análisis estratégicos. Olvídate de leer cientos de comentarios; obtén una radiografía completa del producto en segundos.
 
 ---
 
-## Estructura del proyecto
+## 🌟 Características Principales
 
-```
+* 🔍 **Scraping Avanzado:** Extracción de datos en crudo mediante Selenium y Undetected Chromedriver para evitar bloqueos.
+* 🧠 **Análisis de Sentimiento:** Clasificación inteligente de la opinión de los usuarios.
+* 📊 **Puntuación Dinámica:** Generación de un score basado en el contenido real de las reseñas.
+* 📝 **Resumen Ejecutivo:** Síntesis de los puntos clave, pros y contras.
+* 🚀 **Backend de IA:** Procesamiento ultra-rápido utilizando la API de Groq a través de flujos de trabajo en n8n.
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El flujo de trabajo de VRIA está diseñado para separar la captura de datos de la lógica de procesamiento:
+
+1.  **Frontend (Streamlit):** El usuario introduce la URL.
+2.  **Captura (Selenium):** Se navega al sitio, se extraen los datos (HTML/Text) y se limpian mínimamente.
+3.  **Puente (Webhooks):** Los datos se envían a una instancia de **n8n**.
+4.  **Cerebro (IA):** n8n procesa la información, consulta a **Groq (Llama 3* / Mixtral)** para el análisis semántico.
+5.  **Entrega:** El JSON procesado vuelve a la interfaz para mostrarse de forma elegante.
+
+---
+
+## 🛠️ Stack Tecnológico y Versiones
+
+| Tecnología | Versión | Uso |
+| :--- | :--- | :--- |
+| **Python** | 3.x | Lenguaje base |
+| **Streamlit** | 1.55.0 | Interfaz de usuario |
+| **Selenium** | 4.41.0 | Scraping y automatización |
+| **Undetected Chromedriver** | 3.5.5 | Evasión de bloqueos de bots |
+| **n8n** | Cloud/Self-hosted* | Orquestación de nodos |
+| **Groq API** | Llama 3* / Mixtral | Procesamiento de lenguaje natural |
+
+---
+
+## 📂 Estructura del Proyecto
+
+```text
 VRIA/
-├── data/
-│   ├── raw/                  # Reseñas en crudo (JSON)
-│   └── processed/            # Reseñas limpias y estructuradas
-├── scraping/
-│   ├── scraper.py            # Scraper con fallback BS4 → Playwright
-│   ├── playwright_config.py
-│   └── parsers/              # Un parser por cada web soportada
-│       └── amazon.py
-├── analysis/
-│   ├── sentiment.py          # Conexión y llamadas a Ollama
-│   ├── preprocessor.py       # Limpieza del texto
-│   └── report_builder.py     # Construcción del informe final
-├── streamlit_app/
-│   ├── app.py
-│   ├── utils.py
-│   └── pages/
+├── analysis/               # Carpeta para analizar los datos en crudo
+│   └── preprocessor.py     # Limpieza de palabras (tíldes, monosílabos, palabras poco relevantes)
 ├── n8n_workflows/
-│   ├── scraping_workflow.json
-│   └── procesamiento.json
-├── tests/
-│   ├── test_scraper.py
-│   └── test_analysis.py
-├── .gitignore
-├── README.md
-└── requirements.txt
+│   └── workflow.json       # Estructura de nodos para n8n
+│   └── datos_enviar.py     # Enviar datos crudos a n8n
+├── scraping/
+│   └── scraper_utils.py    # Funciones para elaborar el scraping
+│   └── scraper.py          # Acceso salida del scraping
+├── streamlit_app/
+│   └── app.py              # Aplicación principal
+├── requirements.txt        # Dependencias del proyecto
+└── README.md               # Documentación
 ```
-
 ---
-
-## Páginas soportadas
-
-Por el momento la aplicación solo funciona con:
-
-- ✅ PCComponentes.es
-- ✅ Mediamarkt.es
-
-> Otras páginas se irán añadiendo progresivamente.
-
----
-
-## Stack tecnológico
-
-| Componente | Tecnología |
-|---|---|
-| Lenguaje | Python |
-| Interfaz web | Streamlit |
-| Scraping | BeautifulSoup / Playwright (fallback) |
-| Modelo LLM | Ollama |
-| Automatización | n8n |
-
----
-
-## Instalación y uso
-
-> Pendiente de documentar cuando la aplicación esté funcional.
-
-```bash
-# Clonar el repositorio
-git clone <url-del-repo>
-cd VRIA
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar la aplicación
-streamlit run streamlit_app/app.py
-```
-
----
-
-## Limitaciones conocidas
-
-- La aplicación **no funciona con todos los enlaces**, solo con las páginas específicamente soportadas.
-- No hay base de datos. Los datos se almacenan localmente en formato JSON.
-- La aplicación **no está desplegada en cloud**, solo funciona en local.
-- Amazon puede bloquear el scraping en determinadas circunstancias.
-
----
-
-## Autor
-
-Desarrollado como proyecto académico.
+## Creado por Vicente Marín Suazo
