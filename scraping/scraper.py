@@ -260,6 +260,8 @@ def scrape_opiniones(url):
     except Exception as e:
         print(f"❌ Error en scrape_opiniones: {type(e).__name__}: {e}")
         return []
+    finally:
+        driver.quit()
     
 # EJECUCIÓN DESDE APP.PY
 def analizar_url(url):
@@ -288,7 +290,7 @@ if __name__ == "__main__":
     urldec = "https://www.decathlon.es/es/p/zapatillas-running-adidas-runblaze-hombre-negro/361354/c1m8929086"
     urlpcc = "https://www.pccomponentes.com/tarjeta-grafica-asus-prime-geforce-rtx-5060-oc-edition-8gb-gddr7-reflex-2-rtx-ai-dlss4"
 
-    resultados = scrape_opiniones(urldec)
+    resultados = scrape_opiniones(urlmm)
 
     print(resultados)
 

@@ -21,8 +21,8 @@ except Exception as e:
     st.error("No se pudo importar el scraper. Verifica las rutas.")
     def analizar_url(url): return {"error": "Scraper no disponible"}
 
-def limpiar_texto():
-    st.session_state['url'] = ''
+def limpiar_url():
+    st.session_state.url = ''
 
 
 # --- Estilos Personalizados ---
@@ -84,9 +84,7 @@ with col1:
 
 with col2:
     st.markdown('<div style="padding-top: 28px;"></div>', unsafe_allow_html=True)
-    if st.button("Limpiar 🗑️"):
-        st.session_state['url'] = ''
-        st.rerun()
+    st.button("Limpiar 🗑️", on_click=limpiar_url)
 
 # --- Botón para iniciar análisis ---
 if st.button("✨ Analizar Producto", type="primary"):
