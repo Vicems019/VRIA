@@ -47,7 +47,7 @@ El flujo de trabajo de VRIA está diseñado para separar la captura de datos de 
 ## Instalación de Versiones
 ### En el repositorio del proyecto escribir lo siguiente en la terminal
 ```
-pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 ---
