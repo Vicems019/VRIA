@@ -199,8 +199,6 @@ def optimizar_url_segun_config(url, config):
             return f"{partes[0]}{ancla}{nuevo}{partes[1]}{suffix}"
             
     elif tipo == "reemplazar":
-        # Sustituye la primera aparición del ancla por el nuevo valor
-        print("reemplazar")
         return url.replace(ancla, nuevo, 1)
 
     return url
@@ -230,7 +228,7 @@ def scrape_opiniones(url):
 
     driver = uc.Chrome(options=options, version_main=145)
 
-    wait = WebDriverWait(driver, 10) # Centralizamos el wait
+    wait = WebDriverWait(driver, 10)
     
     try: 
 

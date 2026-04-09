@@ -1,0 +1,143 @@
+{
+  "name": "Analizar Producto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analizar-producto",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d906aa9a-c4b2-4798-b8d5-39424434bfb6",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        64,
+        688
+      ],
+      "webhookId": "a43d7308-0a82-409d-97ea-358e1a1f98ac"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawJson = $input.first().json;\n\nconst body = rawJson.body ?? rawJson;\n\n\n\nconst pros_mencionados = body.pros_mencionados ?? [];\n\nconst contras_mencionados = body.contras_mencionados ?? [];\n\nconst comentarios = body.comentarios ?? [];\n\nconst total_resenas = body.total_resenas ?? 0;\n\nconst rating_promedio = body.rating_promedio ?? 0;\n\n\n\n// Frecuencia de pros\n\nconst frecuenciaPros = {};\n\nfor (const pro of pros_mencionados) {\n\n  const clave = pro.toLowerCase().trim();\n\n  frecuenciaPros[clave] = (frecuenciaPros[clave] || 0) + 1;\n\n}\n\n\n\n// Frecuencia de contras\n\nconst frecuenciaContras = {};\n\nfor (const contra of contras_mencionados) {\n\n  const clave = contra.toLowerCase().trim();\n\n  frecuenciaContras[clave] = (frecuenciaContras[clave] || 0) + 1;\n\n}\n\n\n\n// Top 5\n\nconst topPros = Object.entries(frecuenciaPros)\n\n  .sort((a, b) => b[1] - a[1])\n\n  .slice(0, 5)\n\n  .map(([texto, veces]) => `- ${texto} (mencionado ${veces} veces)`);\n\n\n\nconst topContras = Object.entries(frecuenciaContras)\n\n  .sort((a, b) => b[1] - a[1])\n\n  .slice(0, 5)\n\n  .map(([texto, veces]) => `- ${texto} (mencionado ${veces} veces)`);\n\n\n\n// Muestra de 10 comentarios aleatorios\n\nconst comentariosMuestra = [...comentarios]\n\n  .sort(() => Math.random() - 0.5)\n\n  .slice(0, 10);\n\n\n\nconst systemPrompt = `Eres un analizador experto de reseñas de productos en español.\n\nTu única función es leer datos de reseñas agregadas y devolver un análisis estructurado.\n\nResponde SOLO con JSON válido y sin texto adicional fuera del JSON.`;\n\n\n\nconst userPrompt = `Analiza los siguientes datos agregados de reseñas de un producto y devuelve tu análisis.\n\n\n\nDATOS DEL PRODUCTO:\n\n- Total de reseñas analizadas: ${total_resenas}\n\n- Rating promedio: ${rating_promedio}/5\n\n\n\nTOP 5 ASPECTOS POSITIVOS MÁS MENCIONADOS:\n\n${topPros.length > 0 ? topPros.join('\\n') : '- Sin datos'}\n\n\n\nTOP 5 ASPECTOS NEGATIVOS MÁS MENCIONADOS:\n\n${topContras.length > 0 ? topContras.join('\\n') : '- Sin datos'}\n\n\n\nMUESTRA DE COMENTARIOS REALES (${comentariosMuestra.length} de ${total_resenas}):\n\n${comentariosMuestra.map((c, i) => `[${i + 1}] \"${c}\"`).join('\\n')}\n\n\n\nDevuelve ÚNICAMENTE este JSON relleno:\n\n{\n\n  \"sentimiento_general\": \"\",\n\n  \"puntuacion_final\": 0-10,\n\n  \"pros\": [],\n\n  \"contras\": [],\n\n  \"resumen\": \"\"\n\n}`;\n\n\n\nreturn [{\n\n  json: {\n\n    groqBody: {\n\n      model: \"llama-3.3-70b-versatile\",\n\n      temperature: 0.1,\n\n      max_tokens: 1024,\n\n      response_format: { type: \"json_object\" },\n\n      messages: [\n\n        { role: \"system\", content: systemPrompt },\n\n        { role: \"user\", content: userPrompt }\n\n      ]\n\n    },\n\n    metadata: {\n\n      total: total_resenas,\n\n      rating: rating_promedio,\n\n      top_pros: topPros,\n\n      top_contras: topContras\n\n    }\n\n  }\n\n}];"
+      },
+      "id": "aeba4324-09e4-4b8b-9159-4f84ff400f87",
+      "name": "Construir Prompt1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// Groq devuelve la respuesta en choices[0].message.content\nconst content = data.choices[0].message.content;\n\n// Como usamos response_format: json_object, ya viene como objeto\n// pero por seguridad intentamos parsear si viene como string\nlet analisis;\ntry {\n  analisis = typeof content === 'string' ? JSON.parse(content) : content;\n} catch (e) {\n  // Si falla, intentamos limpiar posible markdown residual\n  const limpio = content\n    .replace(/```json/g, '')\n    .replace(/```/g, '')\n    .trim();\n  const match = limpio.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    analisis = JSON.parse(match[0]);\n  } else {\n    throw new Error('No se pudo parsear: ' + limpio);\n  }\n}\n\nreturn [{\n  json: {\n    sentimiento_general: analisis.sentimiento_general ?? '',\n    puntuacion_final: analisis.puntuacion_final ?? 0,\n    pros: analisis.pros ?? [],\n    contras: analisis.contras ?? [],\n    resumen: analisis.resumen ?? '',\n    metadata: {\n      model: data.model ?? '',\n      tokens_usados: data.usage?.total_tokens ?? 0,\n      tokens_prompt: data.usage?.prompt_tokens ?? 0,\n      tokens_respuesta: data.usage?.completion_tokens ?? 0\n    }\n  }\n}];"
+      },
+      "id": "2d861012-b468-487b-97a4-6ac30e4535eb",
+      "name": "Parsear Respuesta1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "9ca9c2a2-5bb0-4d0d-85e7-65c2ff9b84ab",
+      "name": "Responder1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        960,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.groqBody) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        512,
+        688
+      ],
+      "id": "84b20bff-b3b4-49f7-9112-1c6ed46b3e97",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Construir Prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Prompt1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta1": {
+      "main": [
+        [
+          {
+            "node": "Responder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "371d485c-f527-4eba-83df-168dc7950fca",
+  "meta": {
+    "instanceId": "f1c51991ed9549fd1033043363712d64f4234954df73b3bae28f5b99b643449c"
+  },
+  "id": "1oOzfhZPgxI2Fzid",
+  "tags": []
+}
