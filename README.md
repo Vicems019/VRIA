@@ -44,6 +44,18 @@ El flujo de trabajo de VRIA está diseñado para separar la captura de datos de 
 
 ---
 
+## Instalación de n8n en docker
+### En la terminal escribir lo siguiente para tener la imagen de n8n desplegado en Docker
+```
+docker run -it --rm \
+  --name n8n \
+  -p 5678:5678 \
+  -v n8n_data:/home/node/.n8n \
+  n8nio/n8n
+```
+
+---
+
 ## Instalación de Versiones
 ### En el repositorio del proyecto escribir lo siguiente en la terminal
 ```
